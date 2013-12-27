@@ -1,25 +1,35 @@
 #!/bin/bash -e
 #
+# Creates a aliases file to all executables within a given set of paths.
+# This speeds up tab completetion over adding NFS or remotely mounted
+# directories to your path.
 # Meant to be run as a cronjob. Make a local copy to call from your crontab.
 # Run crontab -e and add an entry similar to the following example:
 # 0 19 * * 3-6 /path/to/local/copy/of/dynamic_aliases
 #
 # Also, add the following to your .bashrc to read the .dynamic_aliases file.
 #
-#ALIAS_FILE="~/.dynamic_aliases"
+#ALIAS_FILE="/home/${USER}/.dynamic_aliases"
 #if [ -f ${ALIAS_FILE} ]; then
 #    . ${ALIAS_FILE}
 #fi
 #
 
-# Edit this list of paths as required.
-DIR_LIST=( "/path/to/add0/"
-           "/path/to/add1/" )
+[[ -z ${USER} ]] && USER="$(whoami)"
+declare -r ALIAS_FILE="/home/${USER}/.dynamic_aliases"
+declare -r TEMP_FILE='/tmp/.dynamic_aliases'
 
-ALIAS_FILE="~/.dynamic_aliases"
-TEMP_FILE=/tmp/.dynamic_aliases
+if [[ -s $1 ]]; then
+  # Pass a comma or colon seprated list of paths to the script.
+  DIR_LIST=(${1//[,:]// })
+else
+  # or edit this list of paths.
+  DIR_LIST=('/path/to/add0/'
+            '/path/to/add1/')
+fi
 
 # Remove the existing file and create a new one.
+[[ ! -f ${ALIAS_FILE} ]] && touch ${ALIAS_FILE}
 [[ -f ${TEMP_FILE} ]] && rm ${TEMP_FILE}
 touch ${TEMP_FILE}
 # Iterate each path, and use 'find' to locate files. Before each file
